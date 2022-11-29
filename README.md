@@ -1,0 +1,2 @@
+# selfdestruct
+Assignment on SelfDestruct
