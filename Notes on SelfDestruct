@@ -1,0 +1,248 @@
+Selfdestruct is a keyword in Solidity that is used when developers want to terminate a contract. In a 2021 research paper, "Why Do Smart Contracts Self-Destruct?
+Investigating the Selfdestruct Function on Ethereum", around 800 contracts have included the selfdestruct keyword, making it an important concept to understand while studying Solidity.
+
+This article defines what selfdestruct is, describe its purpose, and provide an example of implementing selfdestruct in a Solidity smart contract.
+
+What is selfdestruct?
+Selfdestruct is a keyword that is used to terminate a contract, remove the bytecode from the Ethereum blockchain, and send any contract funds to a specified address. 
+
+Selfdestruct originated in 2016 when the Ethereum blockchain and decentralized organizations (DAOs) were in their formative stages. One of the earliest DAOs lost 3.6 million ETH to a hack. The attack continued for days due to the immutability of Solidity contracts. Since a way to destroy a contract didn’t exist at that time, earl DAO developers forked the entire blockchain to prevent further exploits.
+
+Therefore, selfdestruct was created to serve as an exit door in case of security threats. Although it was first called the “suicide function”, it was renamed to selfdestruct from Solidity v0.5.0 onwards.
+
+Why is selfdestruct considered a sensible security practice?
+Including a selfdestruct function in your contract is a sensible security practice as it safeguards contract funds against malicious attacks.
+
+For instance, using the selfdestruct function in the DAO attack could have resulted in a faster resolution, minimal loss of funds, and immediate protection against further exploits.
+
+Why do developers use the selfdestruct function?
+Developers use the selfdestruct function primarily to improve smart contract code security, clean up unused contracts and transfer Ethereum assets quickly.
+
+Selfdestruct is helpful when developers need to upgrade smart contracts. For instance, the ERC-20 framework is the standard implementation for all fungible tokens on Ethereum for the purpose of interoperability. Any token that does not interface with the ERC-20 standard will have difficulty interacting with other contracts.
+
+In such cases, developers will change to a new contract instead of upgrading the current contract. Thus, they can use the selfdestruct function to extract funds from the current contract and build a new contract with the required functionalities.
+
+Developers also use the selfdestruct function to safeguard against potential security threats. According to the same 2021 selfdestruct smart contract report, when developers find security flaws in their contracts, a selfdestruct function helps them immediately terminate the flawed contract and replace it with a secure contract.
+
+What are the disadvantages of using selfdestruct?
+The disadvantages of the selfdestruct function are that all transferable funds should be in ETH and any funds sent to the contract after it is destroyed are lost.
+
+Typically, selfdestruct functions are called by developers who fail to communicate about it on time. Even when a team communicates the update, it does not circulate fast enough. As a result, some people might end up sending funds to the destroyed contract thinking it’s still active. In such a case, the funds are lost.
+
+The second disadvantage of using selfdestruct is that it can only transfer Ether (ETH) and not other ERC-20 tokens such as altcoins or NFTs which follow the ERC-721 token standard. Once selfdestruct is called, these assets can never be recovered.
+
+Why is selfdestruct considered a double-edged sword function?
+The selfdestruct function is a double-edged sword because it gives away the power to the core team to modify immutable contracts even after they have been deployed.
+
+First, adding a selfdestruct function gives an easier avenue for a project’s core team to rug their users or community. Since the developers have access to the contract, they can call the selfdestruct function and direct the funds to their personal wallets.
+
+Therefore, some protocol users and developers have expressed mixed feelings about using the selfdestruct function. 
+
+Secondly, the main intent behind using the selfdestruct keyword in a contract is to provide an escape route during hacks or to replace it with a better contract. However, malicious actors can use this as an exploit.
+
+How does selfdestruct work?
+Selfdestruct works by erasing the contract bytecode from the chain, sending any liquidity to a specified address, and then, refunding a portion of the gas fees to developers. 
+
+A contract consists of two components: state and functions. These components define contract behavior and callable functions. Removing the bytecode means that the contract has no components that define it, rendering the contract uncallable.
+
+When selfdestruct is called, the function caller has to input an alternative address for the funds. This functionality can become a potential security flaw if the contract is exploited to trigger the selfdestruct function.
+
+Once the function call is performed, Ethereum reverses a portion of the transaction fees called negative gas.
+
+What is negative gas and why is it relevant?
+Negative gas refers to a part of the transaction fee that the Ethereum chain refunds whenever the developers use the selfdestruct function.
+
+Since cleaning up the contract code from a blockchain is beneficial to the chain's health, the Ethereum community uses negative gas to incentivize using the selfdestruct function. When a contract calls the selfdestruct function, half of the total gas used for the transaction is refunded to the calling function.
+
+Does selfdestruct remove the contract's history on the Ethereum blockchain?
+No, the selfdestruct function does not remove the history of a contract from the Ethereum chain — it only removes the contract's bytecode.
+
+Ethereum is a blockchain, a public ledger, where a network of interconnected nodes always keep a copy of the blockchain’s state. Therefore, all the data and transactions done before calling the selfdestruct function are permanently recorded on-chain and cannot be altered.
+
+Are funds permanently lost after calling the selfdestruct function?
+No, existing funds in the contract are not permanently lost when the selfdestruct function is called — they are sent to another address specified by the function caller.
+
+However, if anyone sends funds to a selfdestructed contract (i.e. terminated contract) those funds cannot be recovered because the contract code has been deleted from the chain.
+
+Selfdestruct Function Example
+The goal of this program is to allow minting of NFTs until a certain amount of ETH in the contract is reached. Once reached, the program sends all the Ether to the last minter’s wallet as a bonus. Each person can mint multiple NFTs with 1 Ether but only one at a time.
+
+
+
+// SPDX-License-Identifier : MIT  
+ 
+pragma solidity ^0.8.17;
+
+	contract Mint{
+  address public minter;
+  uint public target = 30 Ether;
+  
+  function depositMintingEther() public payable  {
+  		require(msg.value == 1 Ether, "You can only mint one NFT at a time");
+      uint bal = address(this).balance;
+      
+      require(bal <= target, "We have run out of NFTs");
+      
+      if(bal == target){
+      		lastMinter = msg.sender;
+      }
+  }
+          
+  function receiveFunds() public {
+  		require(msg.sender == lastMinter);
+          
+      (bool success, ) = msg.sender.call{value : address(this).balance}("");      
+      require(success, "Cannot send funds");
+      }
+  }
+          
+contract Attack{
+       
+   Mint badMinter;
+   constructor(Mint _badMinter) {
+   		badMinter = Mint(_badMinter);
+   }
+          
+   function spoiler () public payable{
+   		address payable mintAddress = payable(address(badMinter))    
+   		selfdestruct(mintAddress));
+   }
+}
+
+The main issue with the mint contract is that it uses “this.balance” to verify if the contract has the sufficient funds or not to trigger the end clause. So, the attacker can easily send an amount to push the contract over the specified limit and then use the selfdestruct keyword to redirect the funds to their declared constructor. 
+
+Therefore, while using selfdestruct, developers have to be careful about the variables you use to satisfy specific conditions. Avoid using any reference to contract addresses or the funds in the contract, as they can be artificially manipulated.
+
+How to Use the Selfdestruct Function
+Initializing a selfdestruct function is simple: you need to use the selfdestruct keyword within a function and specify a payable address that can receive contract funds after the selfdestruct function is called.
+
+Here is an example of a selfdestruct function typically taught in a Solidity course:
+
+
+
+function destroy(address apocalypse) public {
+		selfdestruct(payable(apocalypse));
+}
+
+This is what the code is doing:
+
+The name of the function is destroy‍
+The parameter specifies the address as apocalypse‍
+When the destroy function is called, the address is specified via the apocalypse variable
+The function visibility is declared public so other contracts can access it.
+Then we use the selfdestruct keyword and pass the apocalypse variable after declaring it as payable.
+Now, since the function is public, it represents a potential security flaw. To counter this, you can consider adding an onlyOwner modifier or using a require statement to confirm that only the owner can call the destroy function.
+
+
+
+function destroy(address apocalypse) public {
+		require(owner == msg.sender, "only the owner can call this");       
+    		selfdestruct(payable(apocalypse));
+}
+
+2. The selfdestruct(address) function removes all bytecode from the contract address and sends all ether stored to the specified address. If this specified address is also a contract, no functions (including the fallback) get called.
+
+In other words, an attacker can create a contract with a selfdestruct() function, send ether to it, call selfdestruct(target) and force ether to be sent to a target.
+
+Let's see how this attack can look like. We create a simple smart contract. Note: I created this contract based on Solidity by example.
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.10;
+
+
+
+contract EtherGame {
+    uint public targetAmount = 5 ether;
+    address public winner;
+
+    function play() public payable {
+        require(msg.value == 1 ether, "You can only send 1 Ether");
+
+        uint balance = address(this).balance;
+        require(balance <= targetAmount, "Game is over");
+
+        if (balance == targetAmount) {
+            winner = msg.sender;
+        }
+    }
+
+    function claimReward() public {
+        require(msg.sender == winner, "Not winner");
+
+        (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+        require(sent, "Failed to send Ether");
+    }
+}
+
+contract Attack {
+    EtherGame etherGame;
+
+    constructor(EtherGame _etherGame) {
+        etherGame = EtherGame(_etherGame);
+    }
+
+    function attack() public payable {
+
+        address payable addr = payable(address(etherGame));
+        selfdestruct(addr);
+    }
+}
+This contract represents a simple game whereby players send 1 ether to the contract hoping to be the one that reaches the threshold equal 5 eth.
+
+When the 5 eth will be reached the game is ended and the first player who reaches the milestone may claim a reward.
+
+In this case, an attacker can e.g. send to the contract 5 eth or any other value that pushes the contract's balance above the threshold. This would lock all rewards in the contract forever.
+
+This is because our if statement in the function play() checks if the winner's balance is equal 5 eth.
+
+Preventative Techniques
+This vulnerability arises from the misuse of this.balance. Your contract should avoid being dependent on the exact values of the balance of the contract because it can be artificially manipulated.
+
+If exact values of deposited ether are required, a self-defined variable should be used that gets incremented in payable functions, to safely track the deposited ether. This can prevent your contract to be influenced by the forced ether sent via a selfdestruct() call.
+
+Let's see how the safe version of the contract looks like.
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.10;
+
+
+
+contract EtherGame {
+    uint public targetAmount = 5 ether;
+    address public winner;
+    uint public balance;
+
+    function play() public payable {
+        require(msg.value == 1 ether, "You can only send 1 Ether");
+
+        uint balance += msg.value;
+        require(balance <= targetAmount, "Game is over");
+
+        if (balance == targetAmount) {
+            winner = msg.sender;
+        }
+    }
+
+    function claimReward() public {
+        require(msg.sender == winner, "Not winner");
+
+        (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+        require(sent, "Failed to send Ether");
+    }
+}
+
+contract Attack {
+    EtherGame etherGame;
+
+    constructor(EtherGame _etherGame) {
+        etherGame = EtherGame(_etherGame);
+    }
+
+    function attack() public payable {
+
+        address payable addr = payable(address(etherGame));
+        selfdestruct(addr);
+    }
+}
+Here, we no longer have any reference to this.balance. Instead, we have created a new variable, balance which keeps tracking of the current amount of eth.
+
