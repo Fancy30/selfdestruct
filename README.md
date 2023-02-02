@@ -1,2 +1,2 @@
-# selfdestruct
-Assignment on SelfDestruct
+# Selfdestruct
+
